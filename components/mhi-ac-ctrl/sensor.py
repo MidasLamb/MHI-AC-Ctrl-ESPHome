@@ -23,7 +23,15 @@ AUTO_LOAD = ["mhi_ac_ctrl"]
 
 CONFIG_SCHEMA = cv.Schema(
     {
-          cv.GenerateID(CONF_MHI_AC_CTRL_ID): cv.use_id(MHI_AC_CTRL),
+        cv.GenerateID(CONF_MHI_AC_CTRL_ID): cv.use_id(MHI_AC_CTRL),
+        cv.Optional("testsensor"): sensor.sensor_schema(
+            UNIT_EMPTY,
+            ICON_EMPTY,
+            3,
+            DEVICE_CLASS_EMPTY,
+            STATE_CLASS_MEASUREMENT,
+            LAST_RESET_TYPE_NEVER,
+        ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
