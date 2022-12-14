@@ -6,8 +6,8 @@ from esphome.const import (
     CONF_UART_ID,
 )
 
-DEPENDENCIES = ["uart"]
-AUTO_LOAD = ["sensor", "text_sensor"]
+DEPENDENCIES = []
+AUTO_LOAD = ["sensor"]
 
 CONF_MHI_AC_CTRL_ID = "mhi_ac_ctrl_id"
 CONF_DECRYPTION_KEY = "decryption_key"
