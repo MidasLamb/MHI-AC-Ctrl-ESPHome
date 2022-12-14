@@ -1,13 +1,13 @@
 #include "MHI-AC-Ctrl-core.h"
-#define ROOM_TEMP_MQTT 1
 
-static const char* TAG = "mhi_ac_ctrl";
+static const char *TAG = "mhi_ac_ctrl";
 
 unsigned long room_temp_api_timeout_ms = millis();
 
 class MhiAcCtrl : public climate::Climate,
                   public Component,
-                  public CallbackInterface_Status {
+                  public CallbackInterface_Status
+{
 public:
     void setup() override
     {
@@ -15,9 +15,12 @@ public:
         this->current_temperature = NAN;
         // restore set points
         auto restore = this->restore_state_();
-        if (restore.has_value()) {
+        if (restore.has_value())
+        {
             restore->apply(this);
-        } else {
+        }
+        else
+        {
             // restore from defaults
             this->mode = climate::CLIMATE_MODE_OFF;
             // initialize target temperature to some value so that it's not NAN
@@ -68,8 +71,9 @@ public:
 
     void loop() override
     {
-        if(millis() - room_temp_api_timeout_ms >= id(room_temp_api_timeout)*1000) {
-            mhi_ac_ctrl_core.set_troom(0xff);  // use IU temperature sensor
+        if (millis() - room_temp_api_timeout_ms >= id(room_temp_api_timeout) * 1000)
+        {
+            mhi_ac_ctrl_core.set_troom(0xff); // use IU temperature sensor
             room_temp_api_timeout_ms = millis();
             ESP_LOGD("mhi_ac_ctrl", "did not receive a room_temp_api value, using IU temperature sensor");
         }
@@ -93,19 +97,24 @@ public:
         static int mode_tmp = 0xff;
         ESP_LOGD("mhi_ac_ctrl", "received status=%i value=%i power=%i", status, value, this->power_);
 
-        if (this->power_ == power_off) {
+        if (this->power_ == power_off)
+        {
             // Workaround for status after reboot
             this->mode = climate::CLIMATE_MODE_OFF;
             this->publish_state();
         }
 
-        switch (status) {
+        switch (status)
+        {
         case status_power:
-            if (value == power_on) {
+            if (value == power_on)
+            {
                 this->power_ = power_on;
                 // output_P(status, (TOPIC_POWER), PSTR(PAYLOAD_POWER_ON));
                 cbiStatusFunction(status_mode, mode_tmp);
-            } else {
+            }
+            else
+            {
                 // output_P(status, (TOPIC_POWER), (PAYLOAD_POWER_OFF));
                 // output_P(status, PSTR(TOPIC_MODE), PSTR(PAYLOAD_MODE_OFF));
                 this->power_ = power_off;
@@ -117,16 +126,20 @@ public:
             mode_tmp = value;
         case opdata_mode:
         case erropdata_mode:
-            switch (value) {
+            switch (value)
+            {
             case mode_auto:
                 // if (status != erropdata_mode)
                 //    output_P(status, PSTR(TOPIC_MODE), PSTR(PAYLOAD_MODE_AUTO));
                 // else
                 //    output_P(status, PSTR(TOPIC_MODE), PSTR(PAYLOAD_MODE_STOP));
                 //    break;
-                if (status != erropdata_mode && this->power_ > 0) {
+                if (status != erropdata_mode && this->power_ > 0)
+                {
                     this->mode = climate::CLIMATE_MODE_HEAT_COOL;
-                } else {
+                }
+                else
+                {
                     this->mode = climate::CLIMATE_MODE_OFF;
                 }
                 break;
@@ -152,7 +165,8 @@ public:
             this->publish_state();
             break;
         case status_fan:
-            switch (value) {
+            switch (value)
+            {
             case 0:
                 this->fan_mode = climate::CLIMATE_FAN_LOW;
                 break;
@@ -170,7 +184,8 @@ public:
             this->publish_state();
             break;
         case status_vanes:
-            switch (value) {
+            switch (value)
+            {
             case vanes_swing:
                 // output_P(status, PSTR(TOPIC_VANES), PSTR(PAYLOAD_VANES_SWING));
                 this->swing_mode = climate::CLIMATE_SWING_VERTICAL;
@@ -192,7 +207,7 @@ public:
         case status_tsetpoint:
             // itoa(value, strtmp, 10);
             // output_P(status, PSTR(TOPIC_TSETPOINT), strtmp);
-            this->target_temperature = (value & 0x7f)/ 2.0;
+            this->target_temperature = (value & 0x7f) / 2.0;
             this->publish_state();
             break;
         case status_errorcode:
@@ -257,7 +272,7 @@ public:
             // if (value < 0x12)
             //    strcpy(strtmp, "<=30");
             // else
-             //   itoa(value / 2 + 32, strtmp, 10);
+            //   itoa(value / 2 + 32, strtmp, 10);
             // output_P(status, PSTR(TOPIC_TD), strtmp);
             break;
         case opdata_ct:
@@ -307,7 +322,8 @@ public:
         }
     }
 
-    std::vector<Sensor *> get_sensors() {
+    std::vector<Sensor *> get_sensors()
+    {
         return {
             &error_code_,
             &outdoor_temperature_,
@@ -318,37 +334,42 @@ public:
             &compressor_frequency_,
             &indoor_unit_total_run_time_,
             &compressor_total_run_time_,
-            &vanes_pos_
-        };
+            &vanes_pos_};
     }
 
-    std::vector<BinarySensor *> get_binary_sensors() {
-        return { &defrost_ };
+    std::vector<BinarySensor *> get_binary_sensors()
+    {
+        return {&defrost_};
     }
 
-    void set_room_temperature(float value) {
-        if ((value > -10) & (value < 48)) {
-            room_temp_api_timeout_ms = millis();  // reset timeout
-            byte tmp = value*4+61;
-            mhi_ac_ctrl_core.set_troom(value*4+61);
-            ESP_LOGD("mhi_ac_ctrl", "set room_temp_api: %f %i %i", value, (byte)(value*4+61), (byte)tmp);
+    void set_room_temperature(float value)
+    {
+        if ((value > -10) & (value < 48))
+        {
+            room_temp_api_timeout_ms = millis(); // reset timeout
+            byte tmp = value * 4 + 61;
+            mhi_ac_ctrl_core.set_troom(value * 4 + 61);
+            ESP_LOGD("mhi_ac_ctrl", "set room_temp_api: %f %i %i", value, (byte)(value * 4 + 61), (byte)tmp);
         }
     }
 
-    void set_vanes(int value) {
+    void set_vanes(int value)
+    {
         mhi_ac_ctrl_core.set_vanes(value);
         ESP_LOGD("mhi_ac_ctrl", "set vanes: %i", value);
     }
 
 protected:
     /// Transmit the state of this climate controller.
-    void control(const climate::ClimateCall& call) override
+    void control(const climate::ClimateCall &call) override
     {
-        if (call.get_mode().has_value()) {
+        if (call.get_mode().has_value())
+        {
             this->mode = *call.get_mode();
 
             power_ = power_on;
-            switch (this->mode) {
+            switch (this->mode)
+            {
             case climate::CLIMATE_MODE_OFF:
                 power_ = power_off;
                 break;
@@ -374,7 +395,8 @@ protected:
             mhi_ac_ctrl_core.set_mode(mode_);
         }
 
-        if (call.get_target_temperature().has_value()) {
+        if (call.get_target_temperature().has_value())
+        {
             this->target_temperature = *call.get_target_temperature();
 
             tsetpoint_ = (uint)roundf(
@@ -383,10 +405,12 @@ protected:
             mhi_ac_ctrl_core.set_tsetpoint((byte)(2 * tsetpoint_));
         }
 
-        if (call.get_fan_mode().has_value()) {
+        if (call.get_fan_mode().has_value())
+        {
             this->fan_mode = *call.get_fan_mode();
 
-            switch (*this->fan_mode) {
+            switch (*this->fan_mode)
+            {
             case climate::CLIMATE_FAN_LOW:
                 fan_ = 0;
                 break;
@@ -405,10 +429,12 @@ protected:
             mhi_ac_ctrl_core.set_fan(fan_);
         }
 
-        if (call.get_swing_mode().has_value()) {
+        if (call.get_swing_mode().has_value())
+        {
             this->swing_mode = *call.get_swing_mode();
 
-            switch (this->swing_mode) {
+            switch (this->swing_mode)
+            {
             case climate::CLIMATE_SWING_VERTICAL:
                 mhi_ac_ctrl_core.set_vanes(vanes_);
                 vanes_ = vanes_swing;
@@ -429,19 +455,19 @@ protected:
     {
         auto traits = climate::ClimateTraits();
         traits.set_supports_current_temperature(true);
-        traits.set_supported_modes({ CLIMATE_MODE_OFF, CLIMATE_MODE_HEAT_COOL, CLIMATE_MODE_COOL, CLIMATE_MODE_HEAT, CLIMATE_MODE_DRY, CLIMATE_MODE_FAN_ONLY });
+        traits.set_supported_modes({CLIMATE_MODE_OFF, CLIMATE_MODE_HEAT_COOL, CLIMATE_MODE_COOL, CLIMATE_MODE_HEAT, CLIMATE_MODE_DRY, CLIMATE_MODE_FAN_ONLY});
         traits.set_supports_two_point_target_temperature(false);
         traits.set_visual_min_temperature(this->minimum_temperature_);
         traits.set_visual_max_temperature(this->maximum_temperature_);
         traits.set_visual_temperature_step(this->temperature_step_);
-        traits.set_supported_fan_modes({ CLIMATE_FAN_AUTO, CLIMATE_FAN_LOW, CLIMATE_FAN_MEDIUM, CLIMATE_FAN_HIGH });
-        traits.set_supported_swing_modes({ CLIMATE_SWING_OFF, CLIMATE_SWING_VERTICAL });
+        traits.set_supported_fan_modes({CLIMATE_FAN_AUTO, CLIMATE_FAN_LOW, CLIMATE_FAN_MEDIUM, CLIMATE_FAN_HIGH});
+        traits.set_supported_swing_modes({CLIMATE_SWING_OFF, CLIMATE_SWING_VERTICAL});
         return traits;
     }
 
-    float minimum_temperature_ { 18.0f };
-    float maximum_temperature_ { 30.0f };
-    float temperature_step_ { 1.0f };
+    float minimum_temperature_{18.0f};
+    float maximum_temperature_{30.0f};
+    float temperature_step_{1.0f};
 
     ACPower power_;
     ACMode mode_;
